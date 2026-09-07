@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "888955644660",
+    "project_id": "labinventory-9e648",
+    "storage_bucket": "labinventory-9e648.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:888955644660:android:2a731a2277fdc940408ca1",
+        "android_client_info": {
+          "package_name": "com.example.internshiptask"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "888955644660-vlmj8i3nvako410hfci1t2rpo6nscamo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD38r4LTP5egdUkfF7tMC9ZCcjV3d9ACGY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "888955644660-vlmj8i3nvako410hfci1t2rpo6nscamo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "888955644660-5qbbtb8snqkhbpjd7jij874j6o9ufkh4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.internshiptask"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
