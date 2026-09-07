@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
-import 'lab_staff/lab_staff_dashboard_screen.dart';
+import 'lab_staff/lab_staff_dashboard_screen.dart'; // path update
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
