@@ -1,4 +1,3 @@
-// lib/screens/admin/stock_action_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/component_model.dart';
@@ -27,7 +26,12 @@ class StockActionDialog extends StatefulWidget {
 
 class _StockActionDialogState extends State<StockActionDialog> {
   final _formKey = GlobalKey<FormState>();
+
   final _quantityController = TextEditingController();
+
+  // Notes controller
+  final _notesController = TextEditingController();
+
   String? _selectedLocationId;
   bool _isLoading = false;
   String? _errorMessage;
@@ -35,6 +39,7 @@ class _StockActionDialogState extends State<StockActionDialog> {
   final _inventoryService = InventoryService();
   final _locationService = LocationService();
   final _transactionService = TransactionService();
+
   static const Color primaryColor = Color(0xFF6C63FF);
 
   String get _title {
@@ -83,6 +88,7 @@ class _StockActionDialogState extends State<StockActionDialog> {
             quantity: qty,
           );
           break;
+
         case StockAction.remove:
           await _inventoryService.removeStock(
             componentId: widget.component.id,
@@ -90,6 +96,7 @@ class _StockActionDialogState extends State<StockActionDialog> {
             quantity: qty,
           );
           break;
+
         case StockAction.damage:
           await _inventoryService.markDamaged(
             componentId: widget.component.id,
@@ -99,9 +106,10 @@ class _StockActionDialogState extends State<StockActionDialog> {
           break;
       }
 
-      // 👇 Naya — action successful hone ke baad transaction log karo
+      // Action successful hone ke baad transaction log karo
       if (mounted) {
         final currentUser = context.read<AuthProvider>().userModel;
+
         final location = await _locationService.getLocation(
           _selectedLocationId!,
         );
@@ -118,18 +126,34 @@ class _StockActionDialogState extends State<StockActionDialog> {
             quantity: qty,
             userId: currentUser?.id ?? '',
             userName: currentUser?.name ?? 'Unknown',
+
+            // Notes / Purpose
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
           ),
         );
       }
 
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       setState(
         () => _errorMessage = e.toString().replaceAll('Exception: ', ''),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    _notesController.dispose();
+    super.dispose();
   }
 
   @override
@@ -146,22 +170,45 @@ class _StockActionDialogState extends State<StockActionDialog> {
             children: [
               CascadingLocationPicker(
                 rackCode: widget.component.abcdClass,
-                onBoxSelected: (boxId) =>
-                    setState(() => _selectedLocationId = boxId),
+                onBoxSelected: (boxId) {
+                  setState(() => _selectedLocationId = boxId);
+                },
               ),
+
               const SizedBox(height: 12),
+
+              // Quantity
               TextFormField(
                 controller: _quantityController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Quantity'),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
+                  if (v == null || v.isEmpty) {
+                    return 'Required';
+                  }
+
                   final n = int.tryParse(v);
-                  if (n == null || n <= 0)
+
+                  if (n == null || n <= 0) {
                     return 'Enter a valid positive number';
+                  }
+
                   return null;
                 },
               ),
+
+              const SizedBox(height: 12),
+
+              // Notes / Purpose
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes / Purpose (optional)',
+                  hintText: 'e.g. Project X, repair job',
+                ),
+                maxLines: 2,
+              ),
+
               if (_errorMessage != null) ...[
                 const SizedBox(height: 10),
                 Text(

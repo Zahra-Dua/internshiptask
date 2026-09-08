@@ -1,4 +1,6 @@
 // lib/screens/quick_search_screen.dart
+// Poora file replace karo:
+
 import 'package:flutter/material.dart';
 import '../models/component_model.dart';
 import '../models/inventory_model.dart';
@@ -44,6 +46,19 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
     }
   }
 
+  Color _classColor(String cls) {
+    switch (cls) {
+      case 'A':
+        return Colors.red;
+      case 'B':
+        return Colors.blue;
+      case 'C':
+        return Colors.teal;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,7 +75,7 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
             child: TextField(
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Type component name or code...',
+                hintText: 'Search by name, code, or part number...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
@@ -134,7 +149,7 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
                               }
 
                               return Container(
-                                margin: const EdgeInsets.only(bottom: 10),
+                                margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -148,6 +163,7 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Header: Name + Status badge
                                     Row(
                                       children: [
                                         Expanded(
@@ -183,23 +199,34 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      component.componentCode,
-                                      style: const TextStyle(
+                                    const SizedBox(height: 8),
+
+                                    // Code, Category, Stock — bilkul document ke format jaisa
+                                    _labelRow('Code', component.componentCode),
+                                    _labelRow(
+                                      'Category',
+                                      component.abcdClass,
+                                      valueColor: _classColor(
+                                        component.abcdClass,
+                                      ),
+                                      bold: true,
+                                    ),
+                                    _labelRow(
+                                      'Stock',
+                                      '$totalQty units',
+                                      bold: true,
+                                    ),
+                                    const SizedBox(height: 8),
+
+                                    const Text(
+                                      'Location:',
+                                      style: TextStyle(
                                         fontSize: 12,
+                                        fontWeight: FontWeight.w600,
                                         color: Colors.grey,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Total Stock: $totalQty units',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
+                                    const SizedBox(height: 4),
 
                                     if (records.isEmpty)
                                       const Text(
@@ -211,15 +238,22 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
                                       )
                                     else
                                       ...records.map(
-                                        (r) => FutureBuilder<LocationModel?>(
-                                          future: _locationService.getLocation(
+                                        (
+                                          r,
+                                        ) => FutureBuilder<List<LocationModel>>(
+                                          future: _locationService.getFullPath(
                                             r.locationId,
                                           ),
-                                          builder: (context, locSnap) {
-                                            final loc = locSnap.data;
+                                          builder: (context, pathSnap) {
+                                            final path = pathSnap.data ?? [];
+                                            final pathText = path
+                                                .map(
+                                                  (l) => '${l.type} ${l.name}',
+                                                )
+                                                .join(' → ');
                                             return Padding(
                                               padding: const EdgeInsets.only(
-                                                top: 2,
+                                                top: 3,
                                               ),
                                               child: Row(
                                                 children: [
@@ -229,12 +263,22 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
                                                     color: primaryColor,
                                                   ),
                                                   const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      pathText.isEmpty
+                                                          ? 'Locating...'
+                                                          : pathText,
+                                                      style: const TextStyle(
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ),
                                                   Text(
-                                                    loc != null
-                                                        ? '${loc.locationCode}: ${r.quantity} pcs'
-                                                        : 'Loading...',
+                                                    '${r.quantity}',
                                                     style: const TextStyle(
                                                       fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ],
@@ -252,6 +296,33 @@ class _QuickSearchScreenState extends State<QuickSearchScreen> {
                       );
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _labelRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool bold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(fontSize: 13, color: Colors.grey),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+              color: valueColor ?? Colors.black87,
+            ),
           ),
         ],
       ),

@@ -1,62 +1,90 @@
+// lib/models/audit_log_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+enum AuditAction { create, update, delete }
 
 class AuditLogModel {
   final String id;
   final String userId;
-  final String action;
-  final String entityType;
+  final String userName;
+  final AuditAction action;
+  final String entityType; // e.g. "component", "location", "user"
   final String entityId;
-  final String? description;
-  final Map<String, dynamic>? previousData;
-  final Map<String, dynamic>? newData;
-  final DateTime? createdAt;
+  final String entityLabel; // e.g. component name, for display
+  final Map<String, dynamic>? oldValues;
+  final Map<String, dynamic>? newValues;
+  final DateTime? timestamp;
 
   AuditLogModel({
     required this.id,
     required this.userId,
+    required this.userName,
     required this.action,
     required this.entityType,
     required this.entityId,
-    this.description,
-    this.previousData,
-    this.newData,
-    this.createdAt,
+    required this.entityLabel,
+    this.oldValues,
+    this.newValues,
+    this.timestamp,
   });
+
+  static AuditAction _actionFromString(String s) {
+    switch (s) {
+      case 'create':
+        return AuditAction.create;
+      case 'update':
+        return AuditAction.update;
+      case 'delete':
+        return AuditAction.delete;
+      default:
+        return AuditAction.update;
+    }
+  }
+
+  static String actionToString(AuditAction a) {
+    switch (a) {
+      case AuditAction.create:
+        return 'create';
+      case AuditAction.update:
+        return 'update';
+      case AuditAction.delete:
+        return 'delete';
+    }
+  }
 
   factory AuditLogModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
     final data = doc.data()!;
-
     return AuditLogModel(
       id: doc.id,
       userId: data['userId'] ?? '',
-      action: data['action'] ?? '',
+      userName: data['userName'] ?? '',
+      action: _actionFromString(data['action'] ?? 'update'),
       entityType: data['entityType'] ?? '',
       entityId: data['entityId'] ?? '',
-      description: data['description'],
-      previousData: data['previousData'] != null
-          ? Map<String, dynamic>.from(data['previousData'])
+      entityLabel: data['entityLabel'] ?? '',
+      oldValues: data['oldValues'] != null
+          ? Map<String, dynamic>.from(data['oldValues'])
           : null,
-      newData: data['newData'] != null
-          ? Map<String, dynamic>.from(data['newData'])
+      newValues: data['newValues'] != null
+          ? Map<String, dynamic>.from(data['newValues'])
           : null,
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate(),
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
-      'action': action,
+      'userName': userName,
+      'action': actionToString(action),
       'entityType': entityType,
       'entityId': entityId,
-      'description': description,
-      'previousData': previousData,
-      'newData': newData,
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
+      'entityLabel': entityLabel,
+      'oldValues': oldValues,
+      'newValues': newValues,
+      'timestamp': FieldValue.serverTimestamp(),
     };
   }
 }

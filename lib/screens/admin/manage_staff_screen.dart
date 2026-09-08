@@ -1,5 +1,6 @@
 // lib/screens/admin/manage_staff_screen.dart
 import 'package:flutter/material.dart';
+import 'package:internshiptask/screens/admin/audit_log_screen.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
@@ -71,9 +72,16 @@ class _ManageStaffScreenState extends State<ManageStaffScreen> {
             icon: const Icon(Icons.logout),
             onPressed: () => context.read<AuthProvider>().logout(),
           ),
+          IconButton(
+            icon: const Icon(Icons.history_edu_outlined),
+            tooltip: 'Audit Logs',
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const AuditLogScreen()));
+            },
+          ),
         ],
-        // 👇 baaki saare purane IconButtons (Quick Search, Components, Locations, Inventory) hata diye
-        // kyunki wo ab apni apni tabs mein hain
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: primaryColor,

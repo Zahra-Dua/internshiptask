@@ -139,6 +139,63 @@ class InventoryService {
     );
   }
 
+  // Ye method existing InventoryService class ke andar add karo:
+
+  // Ek location se dusri location mein quantity move karo (atomic transaction)
+  Future<void> transferStock({
+    required String componentId,
+    required String fromLocationId,
+    required String toLocationId,
+    required int quantity,
+  }) async {
+    if (fromLocationId == toLocationId) {
+      throw Exception('Source and destination cannot be the same');
+    }
+
+    final fromDocId = _docId(componentId, fromLocationId);
+    final toDocId = _docId(componentId, toLocationId);
+    final fromRef = _inventory.doc(fromDocId);
+    final toRef = _inventory.doc(toDocId);
+
+    await _firestore.runTransaction((transaction) async {
+      final fromSnapshot = await transaction.get(fromRef);
+
+      if (!fromSnapshot.exists) {
+        throw Exception('No stock found at source location');
+      }
+
+      final fromQty = (fromSnapshot.data()?['quantity'] ?? 0) as int;
+      if (quantity > fromQty) {
+        throw Exception('Not enough stock to transfer. Available: $fromQty');
+      }
+
+      final toSnapshot = await transaction.get(toRef);
+
+      // Source se ghatao
+      transaction.update(fromRef, {
+        'quantity': fromQty - quantity,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Destination mein badhao (ya naya record banao)
+      if (toSnapshot.exists) {
+        final toQty = (toSnapshot.data()?['quantity'] ?? 0) as int;
+        transaction.update(toRef, {
+          'quantity': toQty + quantity,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        transaction.set(toRef, {
+          'componentId': componentId,
+          'locationId': toLocationId,
+          'quantity': quantity,
+          'damagedQuantity': 0,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
+  }
+
   // Low stock components dhoondo (minimumStock se compare baad mein UI layer mein hoga)
   Future<InventoryModel?> getInventoryRecord(
     String componentId,

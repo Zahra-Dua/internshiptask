@@ -1,6 +1,7 @@
 // lib/screens/admin/component_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:internshiptask/models/transaction_model.dart';
+import 'package:internshiptask/screens/admin/edit_component_screen.dart';
 import 'package:internshiptask/services/transaction_service.dart';
 import '../../models/component_model.dart';
 import '../../models/inventory_model.dart';
@@ -8,6 +9,7 @@ import '../../models/location_model.dart';
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
 import 'stock_action_dialog.dart';
+import 'transfer_dialog.dart';
 
 class ComponentDetailScreen extends StatelessWidget {
   final ComponentModel component;
@@ -119,7 +121,14 @@ class ComponentDetailScreen extends StatelessWidget {
                       ),
                       child: const Icon(Icons.edit_outlined, size: 18),
                     ),
-                    onPressed: () => _comingSoon(context, 'Edit component'),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              EditComponentScreen(component: component),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -519,10 +528,13 @@ class ComponentDetailScreen extends StatelessWidget {
                                 ),
                                 icon: const Icon(Icons.swap_horiz, size: 18),
                                 label: const Text('Transfer'),
-                                onPressed: () => _comingSoon(
-                                  context,
-                                  'Transfer between locations',
-                                ),
+                                onPressed: () async {
+                                  await showDialog(
+                                    context: context,
+                                    builder: (_) =>
+                                        TransferDialog(component: component),
+                                  );
+                                },
                               ),
                             ),
                           ],

@@ -52,8 +52,32 @@ class ComponentService {
     });
   }
 
+  // deleteComponent() ko is se replace karo:
   Future<void> deleteComponent(String componentId) async {
-    await _components.doc(componentId).delete();
+    // Check karo koi stock to nahi bacha
+    final inventorySnapshot = await _firestore
+        .collection('inventory')
+        .where('componentId', isEqualTo: componentId)
+        .get();
+
+    final hasStock = inventorySnapshot.docs.any(
+      (doc) => (doc.data()['quantity'] ?? 0) > 0,
+    );
+
+    if (hasStock) {
+      throw Exception(
+        'Cannot delete: this component still has stock in inventory. '
+        'Please issue or transfer out all stock first.',
+      );
+    }
+
+    // Agar quantity 0 hai (records hain lekin khali), unhe bhi clean kar do
+    final batch = _firestore.batch();
+    for (var doc in inventorySnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_components.doc(componentId));
+    await batch.commit();
   }
 
   Future<List<ComponentModel>> searchComponents(String query) async {

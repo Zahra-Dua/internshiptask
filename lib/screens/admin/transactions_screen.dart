@@ -18,6 +18,8 @@ class TransactionsScreen extends StatelessWidget {
         return Icons.add_box_outlined;
       case TransactionType.damage:
         return Icons.warning_amber;
+      case TransactionType.transfer:
+        return Icons.swap_horiz;
     }
   }
 
@@ -31,6 +33,8 @@ class TransactionsScreen extends StatelessWidget {
         return Colors.blue;
       case TransactionType.damage:
         return Colors.red;
+      case TransactionType.transfer:
+        return Colors.purple;
     }
   }
 
@@ -44,15 +48,24 @@ class TransactionsScreen extends StatelessWidget {
         return 'added';
       case TransactionType.damage:
         return 'marked damaged on';
+      case TransactionType.transfer:
+        return 'transferred on';
     }
   }
 
   String _timeAgo(DateTime? dt) {
     if (dt == null) return '';
+
     final diff = DateTime.now().difference(dt);
+
     if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} min ago';
+    }
+    if (diff.inHours < 24) {
+      return '${diff.inHours} hr ago';
+    }
+
     return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
   }
 
@@ -90,6 +103,7 @@ class TransactionsScreen extends StatelessWidget {
             itemCount: txns.length,
             itemBuilder: (context, index) {
               final t = txns[index];
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
@@ -111,7 +125,9 @@ class TransactionsScreen extends StatelessWidget {
                         size: 18,
                       ),
                     ),
+
                     const SizedBox(width: 12),
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +155,9 @@ class TransactionsScreen extends StatelessWidget {
                               ],
                             ),
                           ),
+
                           const SizedBox(height: 2),
+
                           Text(
                             '${t.locationCode.isNotEmpty ? "${t.locationCode} • " : ""}${_timeAgo(t.timestamp)}',
                             style: const TextStyle(
@@ -147,9 +165,24 @@ class TransactionsScreen extends StatelessWidget {
                               color: Colors.grey,
                             ),
                           ),
+
+                          // Notes / Purpose
+                          if (t.notes != null && t.notes!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                '"${t.notes}"',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
+
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

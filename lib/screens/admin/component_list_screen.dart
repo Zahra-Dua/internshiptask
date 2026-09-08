@@ -1,6 +1,10 @@
 // lib/screens/admin/component_list_screen.dart
 import 'package:flutter/material.dart';
+import 'package:internshiptask/models/audit_log_model.dart';
+import 'package:internshiptask/providers/auth_provider.dart';
 import 'package:internshiptask/screens/admin/location_list_screen.dart';
+import 'package:internshiptask/services/audit_log_service.dart';
+import 'package:provider/provider.dart';
 import '../../models/component_model.dart';
 import '../../models/inventory_model.dart';
 import '../../models/location_model.dart';
@@ -36,6 +40,60 @@ class _ComponentListScreenState extends State<ComponentListScreen> {
         return Colors.teal;
       default:
         return Colors.grey;
+    }
+  }
+
+  // _confirmDelete function mein (jahan bhi hai wo file), try-catch add karo:
+  Future<void> _confirmDelete(
+    BuildContext context,
+    ComponentModel component,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Component?'),
+        content: Text(
+          'Remove "${component.name}" (${component.componentCode})? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ComponentService().deleteComponent(component.id);
+        if (context.mounted) {
+          final currentUser = context.read<AuthProvider>().userModel;
+          await AuditLogService().logAction(
+            AuditLogModel(
+              id: '',
+              userId: currentUser?.id ?? '',
+              userName: currentUser?.name ?? 'Unknown',
+              action: AuditAction.delete,
+              entityType: 'component',
+              entityId: component.id,
+              entityLabel: component.name,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+          );
+        }
+      }
     }
   }
 

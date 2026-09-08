@@ -20,6 +20,8 @@ class LabStaffHistoryScreen extends StatelessWidget {
         return Colors.blue;
       case TransactionType.damage:
         return Colors.red;
+      case TransactionType.transfer:
+        return Colors.purple;
     }
   }
 
@@ -33,15 +35,24 @@ class LabStaffHistoryScreen extends StatelessWidget {
         return Icons.add_box_outlined;
       case TransactionType.damage:
         return Icons.warning_amber;
+      case TransactionType.transfer:
+        return Icons.swap_horiz;
     }
   }
 
   String _timeAgo(DateTime? dt) {
     if (dt == null) return '';
+
     final diff = DateTime.now().difference(dt);
+
     if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} min ago';
+    }
+    if (diff.inHours < 24) {
+      return '${diff.inHours} hr ago';
+    }
+
     return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
   }
 
@@ -95,6 +106,7 @@ class LabStaffHistoryScreen extends StatelessWidget {
                   itemCount: txns.length,
                   itemBuilder: (context, index) {
                     final t = txns[index];
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(14),
@@ -117,6 +129,7 @@ class LabStaffHistoryScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 12),
+
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,6 +141,7 @@ class LabStaffHistoryScreen extends StatelessWidget {
                                     fontSize: 13,
                                   ),
                                 ),
+
                                 Text(
                                   '${t.locationCode} • ${_timeAgo(t.timestamp)}',
                                   style: const TextStyle(
@@ -135,9 +149,24 @@ class LabStaffHistoryScreen extends StatelessWidget {
                                     color: Colors.grey,
                                   ),
                                 ),
+
+                                // Notes / Purpose
+                                if (t.notes != null && t.notes!.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      '"${t.notes}"',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
+
                           Text(
                             TransactionModel.typeToString(t.type).toUpperCase(),
                             style: TextStyle(
