@@ -1,7 +1,12 @@
 // lib/screens/admin/stock_action_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/component_model.dart';
+import '../../models/transaction_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/inventory_service.dart';
+import '../../services/location_service.dart';
+import '../../services/transaction_service.dart';
 import '../../widgets/cascading_location_picker.dart';
 
 enum StockAction { add, remove, damage }
@@ -28,16 +33,29 @@ class _StockActionDialogState extends State<StockActionDialog> {
   String? _errorMessage;
 
   final _inventoryService = InventoryService();
+  final _locationService = LocationService();
+  final _transactionService = TransactionService();
   static const Color primaryColor = Color(0xFF6C63FF);
 
   String get _title {
     switch (widget.action) {
       case StockAction.add:
-        return 'Add Stock';
+        return 'Add / Return Stock';
       case StockAction.remove:
-        return 'Remove Stock';
+        return 'Issue Stock';
       case StockAction.damage:
         return 'Mark Damaged';
+    }
+  }
+
+  TransactionType get _transactionType {
+    switch (widget.action) {
+      case StockAction.add:
+        return TransactionType.restock;
+      case StockAction.remove:
+        return TransactionType.issue;
+      case StockAction.damage:
+        return TransactionType.damage;
     }
   }
 
@@ -81,6 +99,29 @@ class _StockActionDialogState extends State<StockActionDialog> {
           break;
       }
 
+      // 👇 Naya — action successful hone ke baad transaction log karo
+      if (mounted) {
+        final currentUser = context.read<AuthProvider>().userModel;
+        final location = await _locationService.getLocation(
+          _selectedLocationId!,
+        );
+
+        await _transactionService.logTransaction(
+          TransactionModel(
+            id: '',
+            componentId: widget.component.id,
+            componentName: widget.component.name,
+            componentCode: widget.component.componentCode,
+            locationId: _selectedLocationId!,
+            locationCode: location?.locationCode ?? '',
+            type: _transactionType,
+            quantity: qty,
+            userId: currentUser?.id ?? '',
+            userName: currentUser?.name ?? 'Unknown',
+          ),
+        );
+      }
+
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(
@@ -116,9 +157,8 @@ class _StockActionDialogState extends State<StockActionDialog> {
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Required';
                   final n = int.tryParse(v);
-                  if (n == null || n <= 0) {
+                  if (n == null || n <= 0)
                     return 'Enter a valid positive number';
-                  }
                   return null;
                 },
               ),

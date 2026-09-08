@@ -1,3 +1,4 @@
+// lib/services/transaction_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/transaction_model.dart';
 
@@ -7,41 +8,48 @@ class TransactionService {
   CollectionReference<Map<String, dynamic>> get _transactions =>
       _firestore.collection('transactions');
 
-  Future<String> addTransaction(TransactionModel transaction) async {
-    final doc = await _transactions.add(transaction.toFirestore());
-
-    return doc.id;
+  Future<void> logTransaction(TransactionModel transaction) async {
+    await _transactions.add(transaction.toFirestore());
   }
 
-  Future<TransactionModel?> getTransaction(String transactionId) async {
-    final doc = await _transactions.doc(transactionId).get();
-
-    if (!doc.exists) {
-      return null;
-    }
-
-    return TransactionModel.fromFirestore(doc);
-  }
-
-  Stream<List<TransactionModel>> getAllTransactions() {
+  // Sab transactions, sabse naye pehle
+  Stream<List<TransactionModel>> getAllTransactions({int limit = 50}) {
     return _transactions
-        .orderBy('createdAt', descending: true)
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => TransactionModel.fromFirestore(doc))
-              .toList(),
+          (s) => s.docs.map((d) => TransactionModel.fromFirestore(d)).toList(),
         );
   }
 
-  Stream<List<TransactionModel>> getUserTransactions(String userId) {
+  // Ek component ki history
+  Stream<List<TransactionModel>> getTransactionsForComponent(
+    String componentId, {
+    int limit = 20,
+  }) {
     return _transactions
-        .where('userId', isEqualTo: userId)
+        .where('componentId', isEqualTo: componentId)
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => TransactionModel.fromFirestore(doc))
-              .toList(),
+          (s) => s.docs.map((d) => TransactionModel.fromFirestore(d)).toList(),
+        );
+  }
+
+  // Ek specific user (Lab Staff) ki apni history
+  Stream<List<TransactionModel>> getTransactionsForUser(
+    String userId, {
+    int limit = 50,
+  }) {
+    return _transactions
+        .where('userId', isEqualTo: userId)
+        .orderBy('timestamp', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map(
+          (s) => s.docs.map((d) => TransactionModel.fromFirestore(d)).toList(),
         );
   }
 }

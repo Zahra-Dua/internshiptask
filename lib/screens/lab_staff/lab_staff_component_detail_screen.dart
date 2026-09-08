@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../../models/component_model.dart';
 import '../../models/inventory_model.dart';
 import '../../models/location_model.dart';
+import '../../models/transaction_model.dart'; // 👈 naya import
 import '../../services/inventory_service.dart';
 import '../../services/location_service.dart';
+import '../../services/transaction_service.dart'; // 👈 naya import
 import '../admin/stock_action_dialog.dart';
 
 class LabStaffComponentDetailScreen extends StatelessWidget {
@@ -226,6 +228,78 @@ class LabStaffComponentDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // 👇 YAHAN ADD KARNA HAI — "Mark Damaged" button ke bilkul neeche
+              const SizedBox(height: 20),
+              const Text(
+                'RECENT TRANSACTIONS',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<List<TransactionModel>>(
+                stream: TransactionService().getTransactionsForComponent(
+                  component.id,
+                  limit: 5,
+                ),
+                builder: (context, txnSnapshot) {
+                  final txns = txnSnapshot.data ?? [];
+                  if (txns.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Text(
+                        'No transactions recorded yet.',
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    );
+                  }
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: txns.map((t) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${t.userName} ${TransactionModel.typeToString(t.type)}d ${t.quantity} units',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              Text(
+                                t.timestamp != null
+                                    ? '${t.timestamp!.day}/${t.timestamp!.month}/${t.timestamp!.year}'
+                                    : '',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                },
+              ),
+              // 👆 yahan tak
             ],
           );
         },
