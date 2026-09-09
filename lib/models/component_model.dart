@@ -1,3 +1,4 @@
+// lib/models/component_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ComponentModel {
@@ -10,7 +11,7 @@ class ComponentModel {
   final String abcdClass;
   final String description;
   final int minimumStock;
-  final String? imageUrl;
+  final List<String> imageUrls; // 👈 CHANGED: single imageUrl -> list
   final String createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -25,7 +26,7 @@ class ComponentModel {
     required this.abcdClass,
     required this.description,
     required this.minimumStock,
-    this.imageUrl,
+    this.imageUrls = const [], // 👈 default empty list
     required this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -46,7 +47,9 @@ class ComponentModel {
       abcdClass: data['abcdClass'] ?? '',
       description: data['description'] ?? '',
       minimumStock: data['minimumStock'] ?? 0,
-      imageUrl: data['imageUrl'],
+      imageUrls: data['imageUrls'] != null
+          ? List<String>.from(data['imageUrls'])
+          : const [],
       createdBy: data['createdBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -63,7 +66,7 @@ class ComponentModel {
       'abcdClass': abcdClass,
       'description': description,
       'minimumStock': minimumStock,
-      'imageUrl': imageUrl,
+      'imageUrls': imageUrls,
       'createdBy': createdBy,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:internshiptask/services/storage_service.dart';
 import '../models/component_model.dart';
 
 class ComponentService {
@@ -53,8 +54,8 @@ class ComponentService {
   }
 
   // deleteComponent() ko is se replace karo:
+  // deleteComponent() method mein, Component delete se pehle ye add karo:
   Future<void> deleteComponent(String componentId) async {
-    // Check karo koi stock to nahi bacha
     final inventorySnapshot = await _firestore
         .collection('inventory')
         .where('componentId', isEqualTo: componentId)
@@ -71,13 +72,15 @@ class ComponentService {
       );
     }
 
-    // Agar quantity 0 hai (records hain lekin khali), unhe bhi clean kar do
     final batch = _firestore.batch();
     for (var doc in inventorySnapshot.docs) {
       batch.delete(doc.reference);
     }
     batch.delete(_components.doc(componentId));
     await batch.commit();
+
+    // 👇 Naya — Supabase se bhi images delete karo
+    await StorageService().deleteAllImagesForComponent(componentId);
   }
 
   Future<List<ComponentModel>> searchComponents(String query) async {

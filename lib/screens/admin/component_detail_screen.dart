@@ -133,16 +133,18 @@ class ComponentDetailScreen extends StatelessWidget {
                   const SizedBox(width: 8),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    color: const Color(0xFFF0F0F5),
-                    child: Center(
-                      child: Icon(
-                        _iconForType(component.type),
-                        size: 72,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                  ),
+                  background: component.imageUrls.isEmpty
+                      ? Container(
+                          color: const Color(0xFFF0F0F5),
+                          child: Center(
+                            child: Icon(
+                              _iconForType(component.type),
+                              size: 72,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                        )
+                      : _ImageCarousel(imageUrls: component.imageUrls),
                 ),
               ),
 
@@ -693,6 +695,83 @@ class ComponentDetailScreen extends StatelessWidget {
           value.isEmpty ? '—' : value,
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         ),
+      ],
+    );
+  }
+}
+
+// 👇 Naya widget — file ke end mein, class ke bahar
+class _ImageCarousel extends StatefulWidget {
+  final List<String> imageUrls;
+  const _ImageCarousel({required this.imageUrls});
+
+  @override
+  State<_ImageCarousel> createState() => _ImageCarouselState();
+}
+
+class _ImageCarouselState extends State<_ImageCarousel> {
+  int _currentIndex = 0;
+  final PageController _controller = PageController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        PageView.builder(
+          controller: _controller,
+          itemCount: widget.imageUrls.length,
+          onPageChanged: (index) => setState(() => _currentIndex = index),
+          itemBuilder: (context, index) {
+            return Image.network(
+              widget.imageUrls[index],
+              fit: BoxFit.cover,
+              width: double.infinity,
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  color: const Color(0xFFF0F0F5),
+                  child: const Center(child: CircularProgressIndicator()),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: const Color(0xFFF0F0F5),
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+
+        // Dots indicator — agar 1 se zyada image ho
+        if (widget.imageUrls.length > 1)
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.imageUrls.length, (index) {
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: _currentIndex == index ? 8 : 6,
+                  height: _currentIndex == index ? 8 : 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentIndex == index
+                        ? Colors.white
+                        : Colors.white54,
+                  ),
+                );
+              }),
+            ),
+          ),
       ],
     );
   }

@@ -91,8 +91,9 @@ class _LabStaffSearchScreenState extends State<LabStaffSearchScreen> {
                 : StreamBuilder<List<ComponentModel>>(
                     stream: _componentService.getComponents(),
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData)
+                      if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
+                      }
 
                       var matches = snapshot.data!.where((c) {
                         return c.name.toLowerCase().contains(_query) ||
@@ -170,8 +171,9 @@ class _MatchCard extends StatelessWidget {
         final isOut = totalQty == 0;
         final isLow = !isOut && totalQty <= component.minimumStock;
 
-        if (selectedFilter == 'Available' && isOut)
+        if (selectedFilter == 'Available' && isOut) {
           return const SizedBox.shrink();
+        }
 
         final statusColor = isOut
             ? Colors.red

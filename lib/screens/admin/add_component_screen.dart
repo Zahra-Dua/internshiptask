@@ -7,6 +7,10 @@ import '../../providers/auth_provider.dart';
 import '../../services/component_service.dart';
 import '../../services/inventory_service.dart';
 import '../../widgets/cascading_location_picker.dart';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
+import '../../services/storage_service.dart';
 
 class AddComponentScreen extends StatefulWidget {
   const AddComponentScreen({super.key});
@@ -23,6 +27,9 @@ class _AddComponentScreenState extends State<AddComponentScreen> {
   final _partNumberController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _minStockController = TextEditingController(text: '10');
+  final List<XFile> _pickedImages = [];
+  final _storageService = StorageService();
+  bool _isUploadingImages = false;
 
   String? _selectedType;
   String _selectedAbcdClass = 'A';
@@ -35,6 +42,18 @@ class _AddComponentScreenState extends State<AddComponentScreen> {
   final _componentService = ComponentService();
   final _inventoryService = InventoryService();
   static const Color primaryColor = Color(0xFF6C63FF);
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage(imageQuality: 70);
+    if (images.isNotEmpty) {
+      setState(() => _pickedImages.addAll(images));
+    }
+  }
+
+  void _removePickedImage(int index) {
+    setState(() => _pickedImages.removeAt(index));
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -56,6 +75,17 @@ class _AddComponentScreenState extends State<AddComponentScreen> {
       final currentUser = context.read<AuthProvider>().userModel!;
       final code = _codeController.text.trim().toUpperCase();
 
+      // 👇 Pehle images upload karo (agar select ki hain)
+      List<String> imageUrls = [];
+      if (_pickedImages.isNotEmpty) {
+        setState(() => _isUploadingImages = true);
+        imageUrls = await _storageService.uploadImages(
+          files: _pickedImages,
+          componentCode: code,
+        );
+        setState(() => _isUploadingImages = false);
+      }
+
       final component = ComponentModel(
         id: code,
         name: _nameController.text.trim(),
@@ -66,6 +96,7 @@ class _AddComponentScreenState extends State<AddComponentScreen> {
         abcdClass: _selectedAbcdClass,
         description: _descriptionController.text.trim(),
         minimumStock: int.tryParse(_minStockController.text.trim()) ?? 0,
+        imageUrls: imageUrls, // 👈 naya
         createdBy: currentUser.id,
       );
 
@@ -398,36 +429,93 @@ class _AddComponentScreenState extends State<AddComponentScreen> {
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      style: BorderStyle.solid,
+                InkWell(
+                  onTap: _pickImages,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Column(
-                    children: [
-                      Icon(
-                        Icons.cloud_upload_outlined,
-                        color: Colors.grey,
-                        size: 28,
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Image upload coming soon',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'JPEG, PNG up to 2MB',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
-                    ],
+                    child: const Column(
+                      children: [
+                        Icon(
+                          Icons.add_photo_alternate_outlined,
+                          color: primaryColor,
+                          size: 28,
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Tap to add images',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'You can select multiple images',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+
+                if (_pickedImages.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 90,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _pickedImages.length,
+                      itemBuilder: (context, index) {
+                        final img = _pickedImages[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: kIsWeb
+                                    ? Image.network(
+                                        img.path,
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.file(
+                                        File(img.path),
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
+                              Positioned(
+                                top: 2,
+                                right: 2,
+                                child: GestureDetector(
+                                  onTap: () => _removePickedImage(index),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -457,8 +545,19 @@ class _AddComponentScreenState extends State<AddComponentScreen> {
             ],
             const SizedBox(height: 12),
 
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
+            (_isLoading || _isUploadingImages)
+                ? const Center(
+                    child: Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 8),
+                        Text(
+                          'Uploading...',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  )
                 : SizedBox(
                     width: double.infinity,
                     height: 48,

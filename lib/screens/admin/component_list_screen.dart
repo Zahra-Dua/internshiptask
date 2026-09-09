@@ -43,60 +43,6 @@ class _ComponentListScreenState extends State<ComponentListScreen> {
     }
   }
 
-  // _confirmDelete function mein (jahan bhi hai wo file), try-catch add karo:
-  Future<void> _confirmDelete(
-    BuildContext context,
-    ComponentModel component,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Component?'),
-        content: Text(
-          'Remove "${component.name}" (${component.componentCode})? This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await ComponentService().deleteComponent(component.id);
-        if (context.mounted) {
-          final currentUser = context.read<AuthProvider>().userModel;
-          await AuditLogService().logAction(
-            AuditLogModel(
-              id: '',
-              userId: currentUser?.id ?? '',
-              userName: currentUser?.name ?? 'Unknown',
-              action: AuditAction.delete,
-              entityType: 'component',
-              entityId: component.id,
-              entityLabel: component.name,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-          );
-        }
-      }
-    }
-  }
-
   IconData _iconForType(String type) {
     switch (type) {
       case 'Sensor':
@@ -275,6 +221,63 @@ class _ComponentListScreenState extends State<ComponentListScreen> {
   }
 }
 
+// 👇 Top-level function — kahin se bhi (kisi bhi widget se) call ho sakta hai
+Future<void> _confirmDeleteComponent(
+  BuildContext context,
+  ComponentModel component,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Delete Component?'),
+      content: Text(
+        'Remove "${component.name}" (${component.componentCode})? This cannot be undone.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Delete', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true) {
+    try {
+      await ComponentService().deleteComponent(component.id);
+      if (context.mounted) {
+        final currentUser = context.read<AuthProvider>().userModel;
+        await AuditLogService().logAction(
+          AuditLogModel(
+            id: '',
+            userId: currentUser?.id ?? '',
+            userName: currentUser?.name ?? 'Unknown',
+            action: AuditAction.delete,
+            entityType: 'component',
+            entityId: component.id,
+            entityLabel: component.name,
+          ),
+        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${component.name} deleted')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
+}
+
 // Separate widget so each card can independently fetch its inventory/location data
 class _ComponentCard extends StatelessWidget {
   final ComponentModel component;
@@ -389,6 +392,28 @@ class _ComponentCard extends StatelessWidget {
                                     color: classColor,
                                   ),
                                 ),
+                              ),
+                              // 👇 NAYA — Delete menu
+                              PopupMenuButton<String>(
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  size: 18,
+                                  color: Colors.grey,
+                                ),
+                                onSelected: (value) {
+                                  if (value == 'delete') {
+                                    _confirmDeleteComponent(context, component);
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(
+                                      'Delete',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

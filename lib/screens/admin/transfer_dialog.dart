@@ -201,8 +201,9 @@ class _TransferDialogState extends State<TransferDialog> {
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Required';
                   final n = int.tryParse(v);
-                  if (n == null || n <= 0)
+                  if (n == null || n <= 0) {
                     return 'Enter a valid positive number';
+                  }
                   return null;
                 },
               ),

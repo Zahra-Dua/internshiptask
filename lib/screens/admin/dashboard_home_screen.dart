@@ -1,5 +1,7 @@
 // lib/screens/admin/dashboard_home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:internshiptask/models/transaction_model.dart';
+import 'package:internshiptask/services/transaction_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/component_model.dart';
@@ -17,6 +19,15 @@ class DashboardHomeScreen extends StatelessWidget {
     final componentService = ComponentService();
     final inventoryService = InventoryService();
     final currentUser = context.watch<AuthProvider>().userModel;
+
+    String timeAgo(DateTime? dt) {
+      if (dt == null) return '';
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return 'just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+      if (diff.inHours < 24) return '${diff.inHours} hr ago';
+      return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7FA),
@@ -225,8 +236,92 @@ class DashboardHomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    _emptyCard(
-                      'Usage tracking will appear here once transactions are enabled.',
+                    StreamBuilder<List<TransactionModel>>(
+                      stream: TransactionService().getAllTransactions(
+                        limit: 200,
+                      ),
+                      builder: (context, txnSnap) {
+                        final allTxns = txnSnap.data ?? [];
+                        final weekAgo = DateTime.now().subtract(
+                          const Duration(days: 7),
+                        );
+
+                        final recentIssues = allTxns.where(
+                          (t) =>
+                              t.type == TransactionType.issue &&
+                              t.timestamp != null &&
+                              t.timestamp!.isAfter(weekAgo),
+                        );
+
+                        final usageMap = <String, int>{};
+                        for (var t in recentIssues) {
+                          usageMap[t.componentName] =
+                              (usageMap[t.componentName] ?? 0) + t.quantity;
+                        }
+
+                        if (usageMap.isEmpty) {
+                          return _emptyCard('No usage recorded this week yet.');
+                        }
+
+                        final sortedEntries = usageMap.entries.toList()
+                          ..sort((a, b) => b.value.compareTo(a.value));
+                        final top5 = sortedEntries.take(5).toList();
+                        final maxValue = top5.first.value;
+
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            children: top5.map((entry) {
+                              final barWidth = entry.value / maxValue;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          entry.key,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${entry.value}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: barWidth,
+                                        minHeight: 6,
+                                        backgroundColor: Colors.grey.shade200,
+                                        valueColor:
+                                            const AlwaysStoppedAnimation(
+                                              primaryColor,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 24),
@@ -238,7 +333,81 @@ class DashboardHomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    _emptyCard('No recent activity yet.'),
+                    StreamBuilder<List<TransactionModel>>(
+                      stream: TransactionService().getAllTransactions(limit: 5),
+                      builder: (context, txnSnap) {
+                        final txns = txnSnap.data ?? [];
+
+                        if (txns.isEmpty) {
+                          return _emptyCard('No recent activity yet.');
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            children: txns.map((t) {
+                              final actionWord = t.type == TransactionType.issue
+                                  ? 'issued'
+                                  : t.type == TransactionType.returned
+                                  ? 'returned'
+                                  : t.type == TransactionType.restock
+                                  ? 'added'
+                                  : t.type == TransactionType.transfer
+                                  ? 'moved'
+                                  : 'marked damaged on';
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: RichText(
+                                        text: TextSpan(
+                                          style: const TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 12,
+                                          ),
+                                          children: [
+                                            TextSpan(
+                                              text: t.userName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            TextSpan(text: ' $actionWord '),
+                                            TextSpan(
+                                              text:
+                                                  '${t.quantity} × ${t.componentName}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      timeAgo(t.timestamp),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 16),
                   ],
                 );

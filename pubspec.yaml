@@ -42,6 +42,8 @@ dependencies:
   shared_preferences: ^2.5.5
   cloudinary_flutter: ^1.0.0
   cloudinary_url_gen: ^1.0.0
+  supabase_flutter: ^2.17.2
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:
