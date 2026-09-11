@@ -205,4 +205,26 @@ class InventoryService {
     if (!doc.exists) return null;
     return InventoryModel.fromFirestore(doc);
   }
+
+  // Un inventory records ko dhoondo jinka component ab exist nahi karta, aur delete karo
+  Future<int> cleanupOrphanedInventory() async {
+    final inventorySnapshot = await _inventory.get();
+    final componentsSnapshot = await _firestore.collection('components').get();
+
+    final validComponentIds = componentsSnapshot.docs.map((d) => d.id).toSet();
+
+    final orphanedDocs = inventorySnapshot.docs
+        .where((doc) => !validComponentIds.contains(doc.data()['componentId']))
+        .toList();
+
+    if (orphanedDocs.isEmpty) return 0;
+
+    final batch = _firestore.batch();
+    for (var doc in orphanedDocs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+
+    return orphanedDocs.length;
+  }
 }

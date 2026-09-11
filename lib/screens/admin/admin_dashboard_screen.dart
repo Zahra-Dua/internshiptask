@@ -1,5 +1,6 @@
 // lib/screens/admin/admin_dashboard_screen.dart
 import 'package:flutter/material.dart';
+import 'package:internshiptask/widgets/stock_notification_watcher.dart';
 import 'dashboard_home_screen.dart';
 import 'component_list_screen.dart';
 import 'manage_staff_screen.dart';
@@ -26,7 +27,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _tabs),
+      body: StockNotificationWatcher(
+        child: IndexedStack(index: _selectedIndex, children: _tabs),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),

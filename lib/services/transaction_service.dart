@@ -52,4 +52,27 @@ class TransactionService {
           (s) => s.docs.map((d) => TransactionModel.fromFirestore(d)).toList(),
         );
   }
+
+  // Ye method existing TransactionService class ke andar add karo:
+
+  Future<int> cleanupOrphanedTransactions() async {
+    final txnSnapshot = await _transactions.get();
+    final componentsSnapshot = await _firestore.collection('components').get();
+
+    final validComponentIds = componentsSnapshot.docs.map((d) => d.id).toSet();
+
+    final orphanedDocs = txnSnapshot.docs
+        .where((doc) => !validComponentIds.contains(doc.data()['componentId']))
+        .toList();
+
+    if (orphanedDocs.isEmpty) return 0;
+
+    final batch = _firestore.batch();
+    for (var doc in orphanedDocs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+
+    return orphanedDocs.length;
+  }
 }

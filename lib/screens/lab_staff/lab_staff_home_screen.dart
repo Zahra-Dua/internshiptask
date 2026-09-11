@@ -7,6 +7,7 @@ import '../../models/inventory_model.dart';
 import '../../services/component_service.dart';
 import '../../services/inventory_service.dart';
 import 'lab_staff_search_screen.dart';
+import '../image_search_screen.dart';
 
 class LabStaffHomeScreen extends StatefulWidget {
   const LabStaffHomeScreen({super.key});
@@ -109,7 +110,11 @@ class _LabStaffHomeScreenState extends State<LabStaffHomeScreen> {
 
             InkWell(
               borderRadius: BorderRadius.circular(14),
-              onTap: () => _comingSoon('Search by Image'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ImageSearchScreen()),
+                );
+              },
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(

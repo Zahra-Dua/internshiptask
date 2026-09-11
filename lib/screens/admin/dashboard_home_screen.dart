@@ -1,6 +1,8 @@
 // lib/screens/admin/dashboard_home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:internshiptask/models/notification_model.dart';
 import 'package:internshiptask/models/transaction_model.dart';
+import 'package:internshiptask/services/notification_service.dart';
 import 'package:internshiptask/services/transaction_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -8,6 +10,7 @@ import '../../models/component_model.dart';
 import '../../models/inventory_model.dart';
 import '../../services/component_service.dart';
 import '../../services/inventory_service.dart';
+import '../notifications_screen.dart';
 
 class DashboardHomeScreen extends StatelessWidget {
   const DashboardHomeScreen({super.key});
@@ -101,6 +104,58 @@ class DashboardHomeScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                        ),
+
+                        // Row ke children mein, logout IconButton se pehle:
+                        StreamBuilder<List<NotificationModel>>(
+                          stream: NotificationService().getRecentNotifications(
+                            limit: 10,
+                          ),
+                          builder: (context, snapshot) {
+                            final count = snapshot.data?.length ?? 0;
+                            return Stack(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.notifications_outlined,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NotificationsScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                if (count > 0)
+                                  Positioned(
+                                    right: 6,
+                                    top: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 16,
+                                        minHeight: 16,
+                                      ),
+                                      child: Text(
+                                        '$count',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                         IconButton(
                           icon: const Icon(Icons.logout, color: Colors.grey),
@@ -265,8 +320,8 @@ class DashboardHomeScreen extends StatelessWidget {
 
                         final sortedEntries = usageMap.entries.toList()
                           ..sort((a, b) => b.value.compareTo(a.value));
-                        final top5 = sortedEntries.take(5).toList();
-                        final maxValue = top5.first.value;
+                        final top3 = sortedEntries.take(3).toList();
+                        final maxValue = top3.first.value;
 
                         return Container(
                           padding: const EdgeInsets.all(16),
@@ -275,7 +330,7 @@ class DashboardHomeScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Column(
-                            children: top5.map((entry) {
+                            children: top3.map((entry) {
                               final barWidth = entry.value / maxValue;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
@@ -334,12 +389,28 @@ class DashboardHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     StreamBuilder<List<TransactionModel>>(
-                      stream: TransactionService().getAllTransactions(limit: 5),
+                      stream: TransactionService().getAllTransactions(
+                        limit: 50,
+                      ),
                       builder: (context, txnSnap) {
-                        final txns = txnSnap.data ?? [];
+                        final allTxns = txnSnap.data ?? [];
+                        final dayAgo = DateTime.now().subtract(
+                          const Duration(hours: 24),
+                        );
+
+                        final txns = allTxns
+                            .where(
+                              (t) =>
+                                  t.timestamp != null &&
+                                  t.timestamp!.isAfter(dayAgo),
+                            )
+                            .take(5)
+                            .toList();
 
                         if (txns.isEmpty) {
-                          return _emptyCard('No recent activity yet.');
+                          return _emptyCard(
+                            'No activity in the last 24 hours.',
+                          );
                         }
 
                         return Container(

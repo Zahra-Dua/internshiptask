@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../services/user_service.dart';
 import 'add_user_screen.dart';
 import 'edit_user_dialog.dart';
+import 'data_cleanup_screen.dart';
 
 class ManageStaffScreen extends StatefulWidget {
   // 👈 naam change: AdminDashboardScreen → ManageStaffScreen
@@ -79,6 +80,15 @@ class _ManageStaffScreenState extends State<ManageStaffScreen> {
               Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => const AuditLogScreen()));
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.cleaning_services_outlined),
+            tooltip: 'Data Cleanup',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DataCleanupScreen()),
+              );
             },
           ),
         ],

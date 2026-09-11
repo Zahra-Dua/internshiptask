@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
-import 'screens/auth_wrapper.dart';
+import 'screens/splash_screen.dart';
+import '../services/local_notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +15,8 @@ Future<void> main() async {
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleXdsemx2cGRrZnFsaGJjYmliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NTExMzMsImV4cCI6MjEwNDQyNzEzM30.Ovc8b5tyNLrgKu2q1R3EIzSTTUfgkOhQ3kcm10VMuXA',
   );
+  await LocalNotificationService().init();
+  await LocalNotificationService().requestPermissions();
   runApp(const MyApp());
 }
 
@@ -27,7 +30,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'LabInventory',
         debugShowCheckedModeBanner: false,
-        home: const AuthWrapper(),
+        home: const SplashScreen(),
       ),
     );
   }
